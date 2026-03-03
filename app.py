@@ -1,16 +1,16 @@
 import os
 import streamlit as st
-from dotenv import load_dotenv, find_dotenv
 from google import genai
 from google.genai import types
 
 # -------------------------------------------------
-# Load Environment Variables
+# Get API Key from Streamlit Secrets
 # -------------------------------------------------
-dotenv_path = find_dotenv()
-load_dotenv(dotenv_path)
+api_key = os.getenv("GOOGLE_API_KEY")
 
-os.environ["GOOGLE_API_KEY"] = os.getenv("gemini_key")
+if not api_key:
+    st.error("Google API Key not found. Please configure it in Streamlit Secrets.")
+    st.stop()
 
 # -------------------------------------------------
 # Page Configuration
@@ -22,33 +22,20 @@ st.set_page_config(
 )
 
 # -------------------------------------------------
-# Custom Professional Styling
+# Custom Styling
 # -------------------------------------------------
 st.markdown("""
 <style>
-
-/* Global Background */
 .stApp {
     background: linear-gradient(to right, #eef2ff, #f8fafc);
     font-family: 'Poppins', sans-serif;
-    color: #1e293b;
 }
-
 header {visibility: hidden;}
-
 .main > div {
     max-width: 900px;
     margin: auto;
     padding-bottom: 110px;
 }
-
-/* Title */
-h1 {
-    text-align: center;
-    color: #1d4ed8;
-}
-
-/* Chat Bubbles */
 .user-bubble {
     background: #dbeafe;
     padding: 14px 20px;
@@ -58,7 +45,6 @@ h1 {
     margin-left: auto;
     color: #1e3a8a;
 }
-
 .bot-bubble {
     background: #f1f5f9;
     padding: 14px 20px;
@@ -67,8 +53,6 @@ h1 {
     max-width: 75%;
     color: #0f172a;
 }
-
-/* Fixed Input */
 div[data-testid="stChatInput"] {
     position: fixed;
     bottom: 0;
@@ -77,14 +61,7 @@ div[data-testid="stChatInput"] {
     background: white;
     padding: 15px 20px;
     border-top: 1px solid #cbd5e1;
-    z-index: 999;
 }
-
-/* Sidebar */
-section[data-testid="stSidebar"] {
-    background: linear-gradient(to bottom, #dbeafe, #ffffff);
-}
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -105,7 +82,7 @@ if st.sidebar.button("🗑 Clear Chat"):
     st.rerun()
 
 # -------------------------------------------------
-# System Prompt (Advanced Prompt Engineering)
+# System Prompt
 # -------------------------------------------------
 system_prompt = """
 You are an AI Career Advisor and Skill Strategy Consultant.
@@ -115,22 +92,20 @@ Goal: Provide structured, practical, and personalized career guidance.
 First, extract:
 Education | Current Skills | Target Role | Experience Level | Industry | Location
 
-Output Format (STRICTLY structured and concise):
+Output Format:
 
-1. Career Insight (clear direction in 3–4 bullets)
-2. Skill Gap Analysis (missing skills in bullets)
-3. Learning Roadmap (step-by-step practical plan)
-4. Recommended Resources (max 5)
-5. Resume Improvement Tips (3 bullets)
-6. Interview Preparation Focus (3 bullets)
-7. Market Demand Insight (short realistic note)
-8. Motivation Boost (1 short line)
+1. Career Insight (3–4 bullets)
+2. Skill Gap Analysis
+3. Learning Roadmap
+4. Recommended Resources
+5. Resume Improvement Tips
+6. Interview Preparation Focus
+7. Market Demand Insight
+8. Motivation Boost
 
 Rules:
 - No generic advice.
 - No long paragraphs.
-- No storytelling.
-- Max 400 words total.
 - Use bullets only.
 - Be practical and actionable.
 """
@@ -139,7 +114,7 @@ Rules:
 # Initialize Gemini Client
 # -------------------------------------------------
 if "client" not in st.session_state:
-    st.session_state.client = genai.Client()
+    st.session_state.client = genai.Client(api_key=api_key)
 
 client = st.session_state.client
 
@@ -156,7 +131,7 @@ if "chat_session" not in st.session_state:
     )
 
 # -------------------------------------------------
-# Store Conversation History
+# Store Messages
 # -------------------------------------------------
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -164,14 +139,14 @@ if "messages" not in st.session_state:
 # -------------------------------------------------
 # Header
 # -------------------------------------------------
-st.markdown("<h1>🎯 AI Career Advisor</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align:center;color:#1d4ed8;'>🎯 AI Career Advisor</h1>", unsafe_allow_html=True)
 st.markdown(
     "<p style='text-align:center;color:#475569;'>Personalized Career Guidance Powered by Gemini</p>",
     unsafe_allow_html=True
 )
 
 # -------------------------------------------------
-# Display Chat Messages
+# Display Messages
 # -------------------------------------------------
 for role, text in st.session_state.messages:
     if role == "user":
@@ -187,12 +162,8 @@ user_input = st.chat_input("Ask about your career...")
 if user_input:
     st.session_state.messages.append(("user", user_input))
 
-    chat = st.session_state.chat_session
-
     with st.spinner("Analyzing your career profile..."):
-        response = chat.send_message(user_input)
+        response = st.session_state.chat_session.send_message(user_input)
 
-    bot_reply = response.text
-    st.session_state.messages.append(("bot", bot_reply))
-
+    st.session_state.messages.append(("bot", response.text))
     st.rerun()
