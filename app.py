@@ -123,7 +123,7 @@ client = st.session_state.client
 # -------------------------------------------------
 if "chat_session" not in st.session_state:
     st.session_state.chat_session = client.chats.create(
-        model="gemini-2.5-flash",
+        model="gemini-1.5-flash",
         config=types.GenerateContentConfig(
             system_instruction=system_prompt,
             temperature=temperature
@@ -167,3 +167,4 @@ if user_input:
 
     st.session_state.messages.append(("bot", response.text))
     st.rerun()
+
